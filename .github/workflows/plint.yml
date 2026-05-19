@@ -1,0 +1,74 @@
+name: plint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  good-agent:
+    name: examples/good_agent — expected clean
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install plint from source
+        run: pip install -e .
+      - name: Lint examples/good_agent (defaults + strict, must pass clean)
+        run: plint analyze examples/good_agent --no-judge --strict --fail-on warn
+
+  bad-agent:
+    name: examples/bad_agent — showcases what plint catches
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install plint from source
+        run: pip install -e .
+
+      - name: Run plint (human-readable, never fails — fixture is deliberately bad)
+        run: plint analyze examples/bad_agent --no-judge --strict --fail-on none
+
+      - name: Generate JSON report
+        run: plint analyze examples/bad_agent --no-judge --strict --fail-on none --format json --output bad-agent-findings.json
+
+      - name: Generate SARIF report
+        run: plint analyze examples/bad_agent --no-judge --strict --fail-on none --format sarif --output bad-agent-findings.sarif
+
+      - name: Summarize findings in the Actions UI
+        shell: bash
+        run: |
+          {
+            echo "## plint findings on \`examples/bad_agent\`"
+            echo ""
+            echo "\`bad_agent\` is intentionally constructed to trip every rule family. This summary is what plint would surface on a real PR via the same workflow."
+            echo ""
+            python3 - <<'PY'
+          import json
+          from collections import Counter
+          data = json.load(open("bad-agent-findings.json"))
+          findings = data["findings"]
+          by_sev = Counter(f["severity"] for f in findings)
+          print(f"**Total:** {len(findings)} findings  ")
+          print("**By severity:** " + ", ".join(f"`{s}`: {n}" for s, n in by_sev.most_common()))
+          print("")
+          print("| Rule | Layer | Severity | Where | Message |")
+          print("|---|---|---|---|---|")
+          for f in findings:
+              msg = f["message"].replace("|", "\\|").replace("\n", " ")[:160]
+              print(f"| `{f['rule_id']}` | {f['layer']} | {f['severity']} | `{f['where']}` | {msg} |")
+          PY
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload reports as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plint-bad-agent-reports
+          path: |
+            bad-agent-findings.json
+            bad-agent-findings.sarif

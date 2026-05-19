@@ -186,7 +186,9 @@ def run():
 
 ## GitHub Action
 
-Drop this into `.github/workflows/plint.yml`:
+This repo's own [.github/workflows/plint.yml](.github/workflows/plint.yml) is a live demo — every push runs plint against both example agents. The `bad_agent` job renders every finding into the Actions step summary, so you can click into a recent run to see what plint actually surfaces.
+
+For your own project, drop this into `.github/workflows/plint.yml`:
 
 ```yaml
 name: plint
