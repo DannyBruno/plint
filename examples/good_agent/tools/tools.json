@@ -1,0 +1,46 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "lookup_client",
+      "description": "Look up an existing client record by email address. Use this when you need to check whether a client is already in the CRM before creating a new one. Returns the client id if found, null otherwise. Example: lookup_client(email='ada@example.com').",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "email": {"type": "string", "description": "The client's primary email address, exactly as provided in the inquiry."}
+        },
+        "required": ["email"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_client_record",
+      "description": "Create a new client record in the CRM. Use this when a client onboarding request has passed the lookup_client duplicate check. Returns the new client id. Example: create_client_record(name='Ada Lovelace', email='ada@example.com').",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string", "description": "The client's full legal name as it should appear on contracts."},
+          "email": {"type": "string", "description": "The client's primary email address; used as the unique business key."}
+        },
+        "required": ["name", "email"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "send_welcome_email",
+      "description": "Send the firm's welcome email to a newly created client. Use this only after create_client_record succeeds. Example: send_welcome_email(client_id='c_123', template='firm_a').",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "client_id": {"type": "string", "description": "Id returned by create_client_record."},
+          "template": {"type": "string", "description": "Welcome template key, scoped to the originating firm."}
+        },
+        "required": ["client_id", "template"]
+      }
+    }
+  }
+]

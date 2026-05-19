@@ -1,0 +1,41 @@
+name: plint
+description: Lint agent prompts, skills, and tool definitions.
+inputs:
+  path:
+    description: Project directory to scan.
+    required: false
+    default: "."
+  judge:
+    description: Run the LLM-as-judge cross-layer pass ('true' or 'false').
+    required: false
+    default: "false"
+  fail-on:
+    description: Severity threshold for non-zero exit (error|warn|info|none).
+    required: false
+    default: "warn"
+  format:
+    description: Output format (text|json|sarif).
+    required: false
+    default: "sarif"
+  output:
+    description: File to write the report to.
+    required: false
+    default: "plint.sarif"
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Install plint
+      shell: bash
+      run: pip install plint
+    - name: Run plint
+      shell: bash
+      run: |
+        plint analyze "${{ inputs.path }}" \
+          ${{ inputs.judge == 'true' && '--judge' || '--no-judge' }} \
+          --format "${{ inputs.format }}" \
+          --output "${{ inputs.output }}" \
+          --fail-on "${{ inputs.fail-on }}"

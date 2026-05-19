@@ -1,0 +1,26 @@
+{
+  "type": "function",
+  "function": {
+    "name": "do_workflow",
+    "description": "Handle a full client onboarding workflow end to end. First, parse the email payload to extract client contact details and any KYC document attachments. Then look up the client in the CRM by email address. If the client exists, return early with a duplicate flag. Otherwise, create a new client record using the parsed fields. After that, iterate through every KYC attachment and store each one in the document system with the new client id. Once all documents are stored, send the welcome email using the firm's default template. Then write a one-line summary to the operations log. Finally, mark the originating task as complete in the work queue so the next agent can pick up where this one left off. Step 1 is the parse, step 2 is the lookup, step 3 is the create, step 4 is the storage loop, step 5 is the email, step 6 is the log, step 7 is the queue update.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "email_payload": {"type": "string"},
+        "kyc_documents": {"type": "array", "items": {"type": "string"}},
+        "firm_id": {"type": "string"},
+        "template_override": {"type": "string"},
+        "skip_welcome_email": {"type": "boolean"},
+        "skip_ops_log": {"type": "boolean"},
+        "skip_queue_update": {"type": "boolean"},
+        "dry_run": {"type": "boolean"},
+        "force_create": {"type": "boolean"},
+        "override_duplicate_check": {"type": "boolean"},
+        "extra_metadata": {"type": "object"},
+        "trace_id": {"type": "string"},
+        "user_id": {"type": "string"},
+        "session_id": {"type": "string"}
+      }
+    }
+  }
+}
