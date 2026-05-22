@@ -1,22 +1,32 @@
 # plint
 
-A linter for agent **prompts**, **skills**, and **tool definitions** — plus a runtime
+A linter for agent **prompts**, **skills**, and **tool definitions**, plus a runtime
 wrapper that inspects how a model actually uses them.
 
-Built around an observation from *The State of Agent Architecture*: teams that get stuck
-at Stage 2 (over-stuffed prompts, tools-as-workflows, vestigial skills) struggle to graduate
-to Stage 3 not because the models can't handle it, but because the boundary between the
-three layers is fuzzy. plint makes that boundary visible.
+> Want to see what plint actually outputs before reading further? Open the latest run on the
+> [Actions tab](https://github.com/DannyBruno/plint/actions) — every push runs plint against
+> [examples/good_agent](examples/good_agent) (expected clean) and [examples/bad_agent](examples/bad_agent)
+> (renders every finding into the Actions step summary).
+
+## Where the rules come from
+
+plint isn't opinionated for its own sake — every rule traces back to one of these sources, and the README's rule table cites which one. If a rule fires on your code and you disagree, you should be able to argue with the underlying source.
+
+- **Anthropic, _The Complete Guide to Building Skills for Claude_** (official skills PDF / docs) — frontmatter requirements, progressive disclosure, SKILL.md size and structure, security restrictions on angle brackets, reserved name prefixes.
+- **Anthropic, [_Prompting best practices_](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)** — role/persona, XML structuring, few-shot examples, long-context ordering, "tell Claude what to do, not what not to do", and the recent advice to dial back aggressive `MUST`/`CRITICAL` emphasis on 4.6+ models.
+- **Anthropic, [`anthropics/financial-services`](https://github.com/anthropics/financial-services)** (summarised in [_Structuring Agents, Skills, and MCPs_](https://medium.com/intuitionmachine/structuring-agents-skills-and-mcps-best-practices-from-anthropic-9312849ccea6)) — separation of concerns across prompt / skill / tool layers, deterministic ops belong in tools, and the cross-layer duplication smells.
+- **[`mgechev/skills-best-practices`](https://github.com/mgechev/skills-best-practices)** — community-stricter skill conventions: kebab-case names, single-level subdirs, ≤500-line bodies, lean scripts. Ships behind the opt-in `--strict` flag.
+- **[_Writing tools for your agents — a complete guide_](https://pub.towardsai.net/writing-tools-for-your-agents-a-complete-guide-cbfccbaf097d)** — tool description quality, example invocations, parameter documentation, atomic-vs-workflow granularity.
 
 ## Two modes
 
-**Static** — run over a project directory. Heuristic rules + an optional LLM-as-judge
+**plint Static** — run over a project directory. Heuristic rules + an optional LLM-as-judge
 cross-layer audit catch the common misplacements: prompts that encode procedures, tools
 that encode workflows, skills that read like prompts, instructions duplicated across layers,
 deterministic operations narrated in text instead of exposed as tools.
 
-**Runtime** — wrap your existing Anthropic/OpenAI/OpenRouter client calls with a one-line
-decorator. plint records every call into a trace, then surfaces patterns that indicate
+**plint Runtime** — wrap your existing Anthropic / OpenAI / OpenRouter client calls with a
+one-line decorator. plint records every call into a trace, then surfaces patterns that indicate
 the model is confused: tool-call loops, A↔B tool oscillation, calls whose results are
 never read back, repeated calls with drifting arguments, hedging language that signals
 underspecified context, skills loaded but never referenced. An optional confusion-judge
@@ -37,7 +47,13 @@ pip install 'plint[all]'         # everything
 
 Python 3.10+.
 
-## Static mode
+> Why `plint[openai]` covers OpenRouter: OpenRouter is wire-compatible with the OpenAI SDK
+> (you talk to it via `OpenAI(base_url="https://openrouter.ai/api/v1", api_key=…)`), so there
+> is no separate OpenRouter package to install. plint detects OpenRouter automatically from
+> the client's `base_url`. Install only the extras for providers you actually use — Anthropic
+> and OpenAI are independent wrappers.
+
+## plint Static
 
 Point plint at the directory containing your prompts, `SKILL.md` files, and tool JSON.
 
@@ -130,7 +146,7 @@ judge_model   = "claude-sonnet-4-6"   # auto-detected from env if omitted
 enabled = false                       # disable a specific rule
 ```
 
-## Runtime mode
+## plint Runtime
 
 plint wraps the SDK clients you're already using. You don't change your model calls.
 
@@ -225,10 +241,16 @@ examples/
 ```
 
 ```bash
-plint analyze examples/good_agent --no-judge       # ✓ No findings
-plint analyze examples/bad_agent --no-judge        # 8 findings across all rule families
-python examples/runtime_demo.py                    # runtime detectors on synthetic trace
+plint analyze examples/good_agent --no-judge --strict   # ✓ No findings
+plint analyze examples/bad_agent --no-judge --strict    # 25 findings across all rule families
+python examples/runtime_demo.py                         # runtime detectors on synthetic trace
 ```
+
+You don't have to clone the repo to see what plint outputs — every commit to `main` runs
+[the workflow](.github/workflows/plint.yml) against both example agents. Open the
+[latest Actions run](https://github.com/DannyBruno/plint/actions) and look at the
+`examples/bad_agent — showcases what plint catches` job summary for a rendered table of
+every finding.
 
 ## Status
 
