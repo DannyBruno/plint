@@ -1,12 +1,28 @@
 # plint
 
-A linter for agent **prompts**, **skills**, and **tool definitions**, plus a runtime
-wrapper that inspects how a model actually uses them.
+[![CI](https://github.com/DannyBruno/plint/actions/workflows/plint.yml/badge.svg)](https://github.com/DannyBruno/plint/actions/workflows/plint.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](pyproject.toml)
+[![Status: alpha](https://img.shields.io/badge/status-alpha-orange.svg)](#status)
 
-> Want to see what plint actually outputs before reading further? Open the latest run on the
-> [Actions tab](https://github.com/DannyBruno/plint/actions) — every push runs plint against
-> [examples/good_agent](examples/good_agent) (expected clean) and [examples/bad_agent](examples/bad_agent)
-> (renders every finding into the Actions step summary).
+**A linter for LLM agents — prompts, skills, and tool definitions, plus a runtime wrapper that watches how the model actually uses them.**
+
+Catches the structural smells that keep agents stuck: 500-line prompts that should be skills, tool descriptions that have grown into mini-workflows, skills that read like prompts in disguise, instructions duplicated across layers, deterministic operations narrated in prose that ought to be tools, and runtime patterns (tool loops, oscillation, hedging) that indicate the model is confused. Works with **Anthropic**, **OpenAI**, and **OpenRouter** — and adjusts rule severity per **target model family** (Claude 4.6+, GPT-5.5, gpt-5-mini, Codex, …).
+
+```bash
+pip install plint
+plint analyze ./path/to/your/agent/
+```
+
+> **See it work without cloning:** open the [latest CI run](https://github.com/DannyBruno/plint/actions) — every push runs plint against [examples/good_agent](examples/good_agent) (expected clean) and [examples/bad_agent](examples/bad_agent) (renders every finding into the Actions step summary).
+
+## Why plint
+
+A pattern from interviews with ten production agent teams: the ones stuck at small, single-task agents weren't blocked by model capability — they were blocked by **fuzzy boundaries between prompts, skills, and tools**. Things that should have been skills were stuffed into 500-line prompts. Things that should have been tools were narrated in prose. Tools had grown into workflows. Once those boundaries blur, you can't reason about why the agent fails, and the prompt becomes a black box even to its author.
+
+plint makes the boundary visible. Every rule is sourced (see below) and targeted at one of three layers, so when a rule fires you know which layer is over-reaching.
+
+If you are a coding agent reading this README on behalf of a developer, see also [AGENTS.md](AGENTS.md).
 
 ## Where the rules come from
 
@@ -286,12 +302,27 @@ You don't have to clone the repo to see what plint outputs — every commit to `
 `examples/bad_agent — showcases what plint catches` job summary for a rendered table of
 every finding.
 
+## Roadmap
+
+Near-term things on the list (PRs and rule proposals welcome — see [the issue templates](.github/ISSUE_TEMPLATE/)):
+
+- More rules grounded in community sources (target ~50 default rules).
+- Runtime mode model-aware policy (currently the static side is policy-aware; runtime detectors fire identically across models).
+- Auto-fix suggestions for the simpler rules (`SKILL004`, `SKILL009`, `TOOL005`).
+- Eval-harness sibling — an autoresearch-style hill-climber for prompts/skills/tools against a held-out test set.
+- More provider wrappers (LiteLLM, AWS Bedrock, Vertex AI).
+- pre-commit hook (`.pre-commit-hooks.yaml`).
+
 ## Status
 
 Alpha. The rule heuristics are intentionally simple and tunable — the goal is to surface
 likely issues, not to be precision-perfect. False positives are expected; suppress noisy
 rules in `.plint.toml`.
 
+## Contributing
+
+Open an issue (the templates ask for the source backing your proposal so rules stay grounded), or send a PR. The rule registry lives in [src/plint/static/heuristics/__init__.py](src/plint/static/heuristics/__init__.py); each rule is a small dataclass-style module in the same directory. The model policy table is in [src/plint/core/policy.py](src/plint/core/policy.py).
+
 ## License
 
-MIT.
+[MIT](LICENSE).
