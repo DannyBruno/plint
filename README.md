@@ -10,13 +10,12 @@ wrapper that inspects how a model actually uses them.
 
 ## Where the rules come from
 
-plint isn't opinionated for its own sake — every rule traces back to one of these sources, and the README's rule table cites which one. If a rule fires on your code and you disagree, you should be able to argue with the underlying source.
-
 - **Anthropic, _The Complete Guide to Building Skills for Claude_** (official skills PDF / docs) — frontmatter requirements, progressive disclosure, SKILL.md size and structure, security restrictions on angle brackets, reserved name prefixes.
 - **Anthropic, [_Prompting best practices_](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices)** — role/persona, XML structuring, few-shot examples, long-context ordering, "tell Claude what to do, not what not to do", and the recent advice to dial back aggressive `MUST`/`CRITICAL` emphasis on 4.6+ models.
 - **Anthropic, [`anthropics/financial-services`](https://github.com/anthropics/financial-services)** (summarised in [_Structuring Agents, Skills, and MCPs_](https://medium.com/intuitionmachine/structuring-agents-skills-and-mcps-best-practices-from-anthropic-9312849ccea6)) — separation of concerns across prompt / skill / tool layers, deterministic ops belong in tools, and the cross-layer duplication smells.
 - **[`mgechev/skills-best-practices`](https://github.com/mgechev/skills-best-practices)** — community-stricter skill conventions: kebab-case names, single-level subdirs, ≤500-line bodies, lean scripts. Ships behind the opt-in `--strict` flag.
 - **[_Writing tools for your agents — a complete guide_](https://pub.towardsai.net/writing-tools-for-your-agents-a-complete-guide-cbfccbaf097d)** — tool description quality, example invocations, parameter documentation, atomic-vs-workflow granularity.
+- **More to come** — this list will grow as new prompt/skill/tool guidance lands and as community best practices stabilise. Suggest a source by opening an issue.
 
 ## Two modes
 
