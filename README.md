@@ -77,6 +77,36 @@ plint analyze . --format sarif --output plint.sarif
 plint rules
 ```
 
+### Model-aware policy
+
+Every source we cite is at least loosely model-specific. Anthropic's prompting guide says aggressive emphasis (`MUST`/`CRITICAL`/`ALWAYS`) overtriggers on Claude 4.6+; OpenAI says the same of GPT-5.5. But small/literal models like `gpt-5-mini` actually *benefit* from the structural scaffolding that plint otherwise flags as a smell on bigger models. So plint detects the target model and adjusts severity per family on top of the base rules.
+
+**Detection precedence:**
+
+1. `target_model` in `.plint.toml` (or `--model claude-opus-4-7` on the CLI) — explicit.
+2. `target_model:` (or `model:`) in a prompt's YAML frontmatter.
+3. Inferred from your tool definitions — OpenAI-shape tools imply `gpt-5.5`, Anthropic-shape imply `claude-opus-4-7`.
+4. None — generic best practices, no overrides.
+
+plint always prints the detected target at the top of the text report so you can see which policy applied (and the JSON/SARIF reports include the full overrides map under `summary.policy`).
+
+**Current per-family policy (v1):**
+
+| Family | Rule | Default | Adjusted | Why |
+|---|---|---|---|---|
+| `claude-4.6+` | `PROMPT005` (MUST/CRITICAL emphasis) | INFO | **WARN** | Anthropic prompting guide |
+| `claude-4.6+` | `PROMPT008` (no XML on long prompts) | INFO | **WARN** | Anthropic prompting guide |
+| `claude-legacy` (pre-4.6) | `PROMPT005` | INFO | **off** | Aggressive emphasis historically tolerated |
+| `gpt-5.5` | `PROMPT005` | INFO | **WARN** | OpenAI prompt guidance |
+| `gpt-5.5` | `PROMPT008` (XML) | INFO | **off** | OpenAI doesn't require XML structuring |
+| `gpt-5.5` | `PROMPT003` (procedural language) | WARN | **WARN** + emphasised | OpenAI emphasises outcome-first |
+| `gpt-5-mini` / `gpt-5-nano` | `PROMPT005` | INFO | **off** | Small models need explicit emphasis |
+| `gpt-5-mini` / `gpt-5-nano` | `PROMPT003` | WARN | **off** | Literal models need step-by-step scaffolding |
+| `gpt-codex` | `PROMPT003` | WARN | **WARN** | Codex guide: no upfront plans/preambles |
+| `gpt-codex` | `PROMPT008` | INFO | **off** | Plain text fine |
+
+This is a v1 table — it'll grow alongside the sources list.
+
 ### What it catches
 
 Default rules (all sourced to Anthropic's official skills + prompting guides where applicable):
@@ -138,6 +168,10 @@ skill_globs  = ["app/agents/**/SKILL.md"]
 tool_globs   = ["app/agents/**/tools/*.json"]
 prompt_warn_lines  = 150
 prompt_error_lines = 400
+
+# Model-aware policy (autodetected from frontmatter or tool format if omitted)
+target_model    = "claude-opus-4-7"
+target_provider = "anthropic"
 
 judge_enabled = true
 judge_model   = "claude-sonnet-4-6"   # auto-detected from env if omitted

@@ -54,6 +54,10 @@ class Config:
     # Opt-in strict mode (mgechev-style stricter rules)
     strict: bool = False
 
+    # Model-aware policy (None = autodetect from bundle, or fall back to generic)
+    target_model: str | None = None
+    target_provider: str | None = None
+
     # Rule toggles (rule_id -> RuleConfig)
     rules: dict[str, RuleConfig] = field(default_factory=dict)
 

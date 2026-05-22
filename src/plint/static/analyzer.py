@@ -7,6 +7,7 @@ from pathlib import Path
 from plint.core.artifacts import AgentBundle
 from plint.core.config import Config, load_config
 from plint.core.findings import Report
+from plint.core.policy import detect_model_policy
 from plint.loaders.discover import discover_bundle
 from plint.static.heuristics import ALL_RULES
 
@@ -38,9 +39,15 @@ def analyze(
     if bundle.is_empty():
         return report
 
+    policy = detect_model_policy(bundle, cfg)
+    report.summary["policy"] = policy.to_dict()
+
     for rule in ALL_RULES:
         try:
-            report.extend(rule.check(bundle, cfg))
+            for finding in rule.check(bundle, cfg):
+                adjusted = policy.adjust(finding)
+                if adjusted is not None:
+                    report.add(adjusted)
         except Exception as exc:  # pragma: no cover
             report.summary.setdefault("rule_errors", []).append({"rule": rule.id, "error": str(exc)})
 
@@ -50,7 +57,10 @@ def analyze(
             from plint.static.judge import run_judge
 
             judge_findings = run_judge(bundle, cfg)
-            report.extend(judge_findings)
+            for f in judge_findings:
+                adjusted = policy.adjust(f)
+                if adjusted is not None:
+                    report.add(adjusted)
             report.summary["judge_ran"] = True
         except Exception as exc:
             report.summary["judge_ran"] = False

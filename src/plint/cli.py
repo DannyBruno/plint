@@ -33,6 +33,7 @@ def analyze_cmd(
     fmt: OutputFormat = typer.Option(OutputFormat.text, "--format", "-f", help="Output format."),
     judge: bool = typer.Option(True, "--judge/--no-judge", help="Run the LLM-as-judge cross-layer pass."),
     strict: bool = typer.Option(False, "--strict/--no-strict", help="Enable opinionated stricter rules (script size caps, single-level subdirs, etc)."),
+    model: Optional[str] = typer.Option(None, "--model", help="Target model name (e.g. claude-opus-4-7, gpt-5.5, gpt-5-mini). Enables per-family policy. Autodetected from tools/frontmatter if omitted."),
     fail_on: str = typer.Option(
         "error",
         "--fail-on",
@@ -46,6 +47,8 @@ def analyze_cmd(
     cfg = load_config(path)
     if strict:
         cfg.strict = True
+    if model:
+        cfg.target_model = model
     report = analyze(path, cfg, use_judge=judge)
 
     stream = output.open("w", encoding="utf-8") if output else None

@@ -52,6 +52,29 @@ def write_text(report: Report, console: Console | None = None) -> None:
         f"[bold]{counts.get('tools', 0)}[/bold] tools."
     )
 
+    policy = report.summary.get("policy") or {}
+    if policy.get("model") or policy.get("family"):
+        model = policy.get("model") or "(unknown)"
+        family = policy.get("family") or "generic"
+        source = policy.get("source") or "default"
+        overrides = policy.get("overrides") or {}
+        suffix = ""
+        if overrides:
+            adjusted = [rid for rid, sev in overrides.items() if sev is not None]
+            suppressed = [rid for rid, sev in overrides.items() if sev is None]
+            bits = []
+            if adjusted:
+                bits.append(f"re-graded: {', '.join(adjusted)}")
+            if suppressed:
+                bits.append(f"suppressed: {', '.join(suppressed)}")
+            suffix = f"  [dim]({'; '.join(bits)})[/dim]"
+        console.print(
+            f"[dim]Target:[/dim] [bold]{model}[/bold] "
+            f"[dim](family={family}, via {source})[/dim]{suffix}"
+        )
+    elif policy.get("notes"):
+        console.print(f"[dim]Target:[/dim] generic [dim]({policy['notes'][0]})[/dim]")
+
     if not report.findings:
         console.print("[green]✓ No findings.[/green]")
         return
